@@ -11,7 +11,7 @@ library("AnnotationForge")
 library("GOstats")
 library("GSEABase")
 
-fdr_thresh=0.1
+fdr_thresh=0.05
 
 ###################################################
 ### code chunk number 2: Read in genelists and functional annotation
@@ -25,7 +25,7 @@ all_genes_annot1 <- read.csv(funct_annot_all_genes,header=T,sep="\t")
 # import lists of genes from individual tests
 files_correlations <- list.files(path="assay_new_setup/derived_data_and_code/downstream_analyses/analysis_pheno_intermediary_mechanisms/expression_vs_temperature_tolerances/",pattern="*_Exp_fits_slope_patterns.*\\.tab", full.names=T)
 files_correlations <- files_correlations[grep("PERMUTED", files_correlations, invert=T)]
-files_correlations <- files_correlations[grep(fdr_thresh, files_correlations, invert=T)]
+files_correlations <- files_correlations[grep(fdr_thresh, files_correlations, invert=F)]
 	# in pattern field: dot means any character, while asterix means any number of the preceding character
 #"analysis_pheno_intermediary_mechanisms/expression_vs_temperature_tolerances/*_Exp_fits_slope_patterns.tab"
 
@@ -75,7 +75,7 @@ genes_temperature_effect <- sort(genes_temperature_effect[,1])
 # set parameters
 universe_gene_ids <- as.character(genes_temperature_effect)	#gene_names
 test_gene_ids <- sample(genes_temperature_effect,30)
-ontology_type="MF" # "BP" or "MF"
+ontology_type="BP" # "BP" or "MF"
 test_direction_is="over"
 ### make main parameter object
 params <- GSEAGOHyperGParams(	name="test_enrichement", geneSetCollection=gsc, 
@@ -200,3 +200,4 @@ nrow(resultsframe)
 # here - remove if count and size == 1.
 
 write.table(resultsframe, file = paste0("assay_new_setup/derived_data_and_code/downstream_analyses/analysis_pheno_intermediary_mechanisms/Functional_annotation_enrichement_expression/functional_enrichement/",ontology_type,"_ontology_",test_direction_is,"REP_expression_tempTolPatterns","_" ,fdr_thresh, ".tab"), row.names = FALSE,sep="\t")
+

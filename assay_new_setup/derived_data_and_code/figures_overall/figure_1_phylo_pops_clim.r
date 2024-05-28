@@ -186,7 +186,7 @@ data_list_sub <- lapply(data_list_sub, function(x){ x$res <- abs(x$temperature-a
  	#Performs Bartlett's test of the null that the variances in each of the groups (samples) are the same.
 	# assumes normality
 # levenes test is more robust to deviations from normality
-# leveneTest()		# Levene is (apparently) an anova on residuals, we can run the anova on residual ourself and do tukeyhsd
+# leveneTest()		# Levene is an anova on residuals, we can run the anova on residual ourself and do tukeyhsd
 	# TukeyHSD(aov())
 # flingers test is nonparametric, thus does not assume normality
 	# Performs a Fligner-Killeen (median) test of the null that the variances in each of the groups (samples) are the same.

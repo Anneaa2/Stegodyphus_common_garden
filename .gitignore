@@ -47,4 +47,6 @@ expression/
 *.docx
 
 assay_new_setup/derived_data_and_code/methylation/MACAU2-master/
+"assay_new_setup/derived_data_and_code/metabolites/data/NMR_Kirsten/NMR_AQ_CTmax_results/ignificant and pop significant"
+"assay_new_setup/derived_data_and_code/metabolites/data/NMR_Kirsten/NMR_ORG_CTmax_results/(intensity_dat) ){""
 

@@ -577,9 +577,11 @@ viodata1$Methy_level[ which(viodata1$Methy_level > .7) ] <- "High"
  viodata1$Methy_level[ which(viodata1$Methy_level < .2) ] <- "Low"
  viodata1$Methy_level <- as.factor(viodata1$Methy_level)
  viodata1$Methy_level <- factor(viodata1$Methy_level, levels=c("Low","Medium","High"))
-
+# viodata1 = SD of normalised counts
+# viodata = SD of normalised vst counts
 
 # test if difference
+lm(EXP_value~Methy_level,data=viodata)
 lm(EXP_value~Methy_level,data=viodata1)
 'Call:
 lm(formula = EXP_value ~ Methy_level, data = viodata1)
@@ -588,6 +590,7 @@ Coefficients:
       (Intercept)  Methy_levelMedium    Methy_levelHigh
             975.7             -615.4             -704.2
 '
+anova(lm(EXP_value~Methy_level,data=viodata))
 anova(lm(EXP_value~Methy_level,data=viodata1))
 'Analysis of Variance Table
 
@@ -598,6 +601,7 @@ Residuals   29748 1.5847e+12   53272444
 ---
 Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 '
+summary(lm(EXP_value~Methy_level,data=viodata))
 summary(lm(EXP_value~Methy_level,data=viodata1))
 '
 Call:
@@ -620,11 +624,19 @@ Residual standard error: 7299 on 29748 degrees of freedom
 Multiple R-squared:  0.002004,  Adjusted R-squared:  0.001936
 F-statistic: 29.86 on 2 and 29748 DF,  p-value: 1.108e-13
 '
+HSD.test(lm(EXP_value~Methy_level,data=viodata),"Methy_level")$group
 HSD.test(lm(EXP_value~Methy_level,data=viodata1),"Methy_level")$group
        'EXP_value groups
 Low     975.7289      a
 Medium  360.3644      b
 High    271.5102      b
+
+VST:
+HSD.test(lm(EXP_value~Methy_level,data=viodata),"Methy_level")$group
+       EXP_value groups
+Low    0.4935505      a
+Medium 0.4558947      b
+High   0.4206638      c
 '
 # Draw the plot
 
@@ -729,6 +741,7 @@ viodata1$Methy_level <- factor(viodata1$Methy_level, levels=c("Low","Medium","Hi
 
 
 # test if difference
+lm(EXP_value~Methy_level,data=viodata)
 lm(EXP_value~Methy_level,data=viodata1)
 'Call:
 lm(formula = EXP_value ~ Methy_level, data = viodata1)
@@ -737,6 +750,7 @@ Coefficients:
       (Intercept)  Methy_levelMedium    Methy_levelHigh  
             825.0             -399.6             -439.9 
 '
+anova(lm(EXP_value~Methy_level,data=viodata))
 anova(lm(EXP_value~Methy_level,data=viodata1))
 'Analysis of Variance Table
 
@@ -747,6 +761,7 @@ Residuals   652072 5.3615e+13 8.2223e+07
 ---
 Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 '
+summary(lm(EXP_value~Methy_level,data=viodata))
 summary(lm(EXP_value~Methy_level,data=viodata1))
 '
 Call:
@@ -769,11 +784,17 @@ Residual standard error: 9068 on 652072 degrees of freedom
 Multiple R-squared:  0.0005047, Adjusted R-squared:  0.0005016 
 F-statistic: 164.6 on 2 and 652072 DF,  p-value: < 2.2e-16
 '
+HSD.test(lm(EXP_value~Methy_level,data=viodata),"Methy_level")$group
 HSD.test(lm(EXP_value~Methy_level,data=viodata1),"Methy_level")$group
 '       EXP_value groups
 Low     825.0336      a
 Medium  425.3951      b
 High    385.1001      b
+VST:
+       EXP_value groups
+Medium 0.4198703      a
+High   0.3954758      b
+Low    0.3945270      b
 '
 # Draw the plot
 ### Double plots: dot plot and violin plot side by side

@@ -342,8 +342,8 @@ combi_dat_overlap1[combi_dat_overlap1 == 0] <- NA
 # "/home/anneaa/spider2/faststorage/assay_study_anne/assay_new_setup/derived_data_and_code/downstream_analyses/analysis_pheno_intermediary_mechanisms/CTmax_Exp_subset_fits_patterns.csv"
 #pattern_fit_files <- list.files(path="/home/anneaa/spider2/faststorage/assay_study_anne/assay_new_setup/derived_data_and_code/downstream_analyses/analysis_pheno_intermediary_mechanisms/", pattern="subset_fits_patterns.csv", full.names=T )
 #pattern_fit_files <- list.files(path="/home/anneaa/spider2/faststorage/assay_study_anne/assay_new_setup/derived_data_and_code/downstream_analyses/analysis_pheno_intermediary_mechanisms/", pattern="fits_slope_patterns*..tab", full.names=T, recursive=T )
-pattern_fit_files <- list.files(path="/home/anneaa/spider2/faststorage/assay_study_anne/assay_new_setup/derived_data_and_code/downstream_analyses/analysis_pheno_intermediary_mechanisms/", pattern="fits_slope_patterns", full.names=T, recursive=T )
-pattern_fit_files <- pattern_fit_files[grep(".tab", pattern_fit_files)]
+pattern_fit_files <- list.files(path="/home/anneaa/spider2/faststorage/assay_study_anne/assay_new_setup/derived_data_and_code/downstream_analyses/analysis_pheno_intermediary_mechanisms/", pattern="fits_slope_patterns.*\\.tab", full.names=T, recursive=T )
+#pattern_fit_files <- pattern_fit_files[grep(".tab", pattern_fit_files)]
 pattern_fit_files <- pattern_fit_files[grep("PERMUTED", pattern_fit_files, invert = TRUE)]
 pattern_fit_files <- pattern_fit_files[grep("0.1", pattern_fit_files, invert = TRUE)]
 phenotype_like_cases <- lapply(pattern_fit_files, read.table, stringsAsFactors=F)
