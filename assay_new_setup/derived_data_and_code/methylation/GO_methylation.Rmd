@@ -1,0 +1,337 @@
+
+---
+Title: "Methylation data prep for Assay study (common garden)"
+Author: "Anne Aagaard"
+Updated: "11-03-2020"
+
+output:
+BiocStyle::html_document:
+toc: true
+toc_depth: 3
+fig_caption: yes
+
+fontsize: 14pt
+---
+
+
+## Get files from Lins run
+
+```\{bash Get_coverage_files, eval=FALSE\}
+
+	# Lin have already run the mapping and methylation calling.
+	# Documentation of how here: /faststorage/project/spider2/Methylation_data/Lin_20180608_bismark_v2_assay/run.sh
+	# Coverage files can be found here: ls /faststorage/project/spider2/Methylation_data/Lin_20180608_bismark_v2_assay/SMP/ | grep "[SBKN][0-9][0-9].cov$"
+
+srun --mem=16g --pty /bin/bash
+conda activate assay
+
+
+for file in `ls /faststorage/project/spider2/Methylation_data/Lin_20180608_bismark_v2_assay/SMP/ | grep "[SBKN][0-9][0-9].cov$"`
+do
+	awk 'BEGIN{srand()}{if(rand()<=.001)print $0}' /faststorage/project/spider2/Methylation_data/Lin_20180608_bismark_v2_assay/SMP/${file} > /faststorage/project/spider2/assay_study_anne/methylation/smps//${file/.cov/_sub.cov}
+done
+
+cd /faststorage/project/spider2/assay_study_anne/methylation/
+```
+	
+
+## Look at and filter according to coverage
+
+```\{r Coverage_plots_etc, eval=FALSE\}
+
+# plot coverage in R and calculate top percent threshold cutoffs
+# Plot (R).
+
+setwd("smps")
+files<-dir(,"cov$")
+png("Cdepth.tiff",height=700,width=1200)
+par(mfrow=c(4,5),mar=c(2,2,3,1))
+total_depths=vector()
+
+for(file in files)
+{
+	a<-read.table(file)
+	a<-a[,5]+a[,6]
+	total_depths<-append(total_depths,a)
+	i<-a<100
+	a<-a[i]
+	plot(table(a),main=sub(".sub.cov$","",file))
+	grid()
+}
+dev.off()
+
+percentscore=length(total_depths)/100*1
+numberis=head(tail(sort(total_depths),percentscore));numberis
+[1] 32 32 32 32 32 32
+
+percentscore=length(total_depths)/100*0.5
+numberis=head(tail(sort(total_depths),percentscore));numberis
+[1] 39 39 39 39 39 39
+
+percentscore=length(total_depths)/100*0.2
+numberis=head(tail(sort(total_depths),percentscore));numberis
+[1] 61 61 61 61 61 61
+
+```
+
+
+
+```\{bash Filter_on_coverage_thresholds, eval=FALSE\}
+
+# Back in bash, Apply coverage thresholds:
+# cut at low 5 (and 10) and high 32 (corresponding to top 1%)
+
+for file in `ls /faststorage/project/spider2/Methylation_data/Lin_20180608_bismark_v2_assay/SMP/ | grep "[SBKN][0-9][0-9].cov$"`
+do
+	sbatch /faststorage/project/spider2/assay_study_anne/methylation/coverage_filter_awk.sh /faststorage/project/spider2/Methylation_data/Lin_20180608_bismark_v2_assay/SMP/$file /faststorage/project/spider2/assay_study_anne/methylation/smps/${file/.cov/_d5D32.cov} 5
+	sbatch /faststorage/project/spider2/assay_study_anne/methylation/coverage_filter_awk.sh /faststorage/project/spider2/Methylation_data/Lin_20180608_bismark_v2_assay/SMP/$file /faststorage/project/spider2/assay_study_anne/methylation/smps/${file/.cov/_d10D32.cov} 10
+done
+```
+
+
+
+
+## Intersect to regions - pick out additional regions
+
+
+###  1000 bp upstream TSS
+
+```\{bash intro_1, eval=FALSE\}
+
+# pick one 1000bp upsteam 
+	
+cd /faststorage/project/spider2/assay_study_anne/methylation/
+anno="/faststorage/project/spider2/dumicola_genome/annotation/v2.gff" #annotation
+
+```
+
+```\{bash get_1000bp_upsteam, eval=FALSE\}
+
+# Non overlapping tss regions.
+	# First pick out whether it is a "tss" and what strand it is on (for/rev) --> define region as tss +/- upstream downstream
+	#	actually, I don't care if they overlap. I guess I only care if they are identical.
+
+upstream=1000
+downstream=0
+awk -v upstream=$upstream -v downstream=$downstream 'BEGIN{FS="\t";OFS="\t"}\
+$3=="tss" && $7=="+"{print $1,$4,$5,$9,$4-upstream,$5+downstream,$7}\
+$3=="tss" && $7=="-"{print $1,$4,$5,$9,$5-upstream,$4+downstream,$7}' $anno\
+ | sort -s -n -k 3,3 | sort -s -n -k 2,2 | sort -s -k 1,1 | awk '\
+ BEGIN{FS="\t";OFS="\t";getline;SEQ=$1;ST=$2;EN=$3;RST=$5;REN=$6;GENE=$4;STRA=$7}\
+ RST<0{RST=1}\
+ REN<0{REN=1}\
+ $1!=SEQ{print SEQ,ST,EN,RST,REN,STRA,GENE;SEQ=$1;ST=$2;EN=$3;RST=$5;REN=$6;GENE=$4;STRA=$7;next}\
+ $2>EN{print SEQ,ST,EN,RST,REN,STRA,GENE;ST=$2;EN=$3;RST=$5;REN=$6;GENE=$4;STRA=$7;next}\
+ $3>EN{EN=$3}\
+ END{print SEQ,ST,EN,RST,REN,STRA,GENE}' > smps/tss1000_region/tss1000_pos_region.txt
+	# If SEQ is different on this and next line, print and next
+	# if startposition is larger than end position on former line, print and next (ie, if next start is NOT witin the range of current sequence)
+	# if current end position is larger than former end, make the new end position the variable.
+```
+
+```\{bash checks_1000bp_upstream, eval=FALSE\}
+#Check that a region is not reported twice
+cut smps/tss1000_region/tss1000_pos_region.txt -f 1,4,5|uniq|wc -l
+# 34442
+cut smps/tss1000_region/tss1000_pos_region.txt -f 1,4,5|wc -l
+# 34442
+
+#cut out relevant fields to new file (seq, st_reg, en_reg,strand,gene name)
+cut smps/tss1000_region/tss1000_pos_region.txt -d$'\t' -f 1,4,5,6,7 >smps/tss1000_region/tss1000_region.txt
+rm smps/tss1000_region/tss1000_pos_region.txt
+
+```
+
+### 1000-2000 bp upstream TSS
+	
+```\{bash intro_2, eval=FALSE\}
+cd /faststorage/project/spider2/assay_study_anne/methylation/
+anno="/faststorage/project/spider2/dumicola_genome/annotation/v2.gff" #annotation
+```
+
+```\{bash get_2000bp_upsteam, eval=FALSE\}
+
+upstream=2000
+downstream=-1000
+awk -v upstream=$upstream -v downstream=$downstream 'BEGIN{FS="\t";OFS="\t"}\
+$3=="tss" && $7=="+"{print $1,$4,$5,$9,$4-upstream,$5+downstream,$7}\
+$3=="tss" && $7=="-"{print $1,$4,$5,$9,$5-upstream,$4+downstream,$7}' $anno\
+ | sort -s -n -k 3,3 | sort -s -n -k 2,2 | sort -s -k 1,1 | awk '\
+ BEGIN{FS="\t";OFS="\t";getline;SEQ=$1;ST=$2;EN=$3;RST=$5;REN=$6;GENE=$4;STRA=$7}\
+ RST<0{RST=1}\
+ REN<0{REN=1}\
+ $1!=SEQ{print SEQ,ST,EN,RST,REN,STRA,GENE;SEQ=$1;ST=$2;EN=$3;RST=$5;REN=$6;GENE=$4;STRA=$7;next}\
+ $2>EN{print SEQ,ST,EN,RST,REN,STRA,GENE;ST=$2;EN=$3;RST=$5;REN=$6;GENE=$4;STRA=$7;next}\
+ $3>EN{EN=$3}\
+ END{print SEQ,ST,EN,RST,REN,STRA,GENE}' > smps/tss2000_region/tss2000_pos_region.txt
+
+```
+
+```\{bash checks_2000bp_upstream, eval=FALSE\}
+
+#Check that a region is not reported twice
+cut smps/tss2000_region/tss2000_pos_region.txt -f 1,4,5|uniq|wc -l
+# 34440
+cut smps/tss2000_region/tss2000_pos_region.txt -f 1,4,5|wc -l
+# 34442
+
+#cut out relevant fields to new file (seq, st_reg, en_reg,strand,gene name)
+cut smps/tss2000_region/tss2000_pos_region.txt -d$'\t' -f 1,4,5,6,7 >smps/tss2000_region/tss2000_region.txt
+rm smps/tss2000_region/tss2000_pos_region.txt
+
+```
+
+
+
+## Intersect to regions with bedtools intersect
+
+#Genes and tss regions were extracted as in : /faststorage/project/spider2/Methylation_data/AAL_20200207_fishing_regions_SOV/GO_overview.sh
+
+### Get Gene region
+
+```\{bash Intersect_on_gene_region, eval=FALSE\}
+
+
+cd /faststorage/project/spider2/assay_study_anne/methylation/
+for file in `ls smps/ | grep "d5D32.cov$"`
+do
+	qx --no-scratch -m 50G "bedtools intersect -wo -a smps/$file -b /faststorage/project/spider2/Methylation_data/AAL_20200207_fishing_regions_SOV/gene_region/gene_pos_region.txt > smps/gene_region/${file/.cov/_gene.cov}"
+done
+for file in `ls smps/ | grep "d10D32.cov$"`
+do
+	qx --no-scratch -m 50G "bedtools intersect -wo -a smps/$file -b /faststorage/project/spider2/Methylation_data/AAL_20200207_fishing_regions_SOV/gene_region/gene_pos_region.txt > smps/gene_region/${file/.cov/_gene.cov}"
+done
+
+```
+
+### Get tss region
+
+```\{bash Intersect_on_tss_region, eval=FALSE\}
+
+cd /faststorage/project/spider2/assay_study_anne/methylation/
+for file in `ls smps/ | grep "d5D32.cov$"`
+do
+	qx --no-scratch -m 50G "bedtools intersect -wo -a smps/$file -b //faststorage/project/spider2/Methylation_data/AAL_20200207_fishing_regions_SOV/tss_region/tss_region.txt > smps/tss_region/${file/.cov/_tss.cov}"
+done
+for file in `ls smps/ | grep "d10D32.cov$"`
+do
+	qx --no-scratch -m 50G "bedtools intersect -wo -a smps/$file -b //faststorage/project/spider2/Methylation_data/AAL_20200207_fishing_regions_SOV/tss_region/tss_region.txt > smps/tss_region/${file/.cov/_tss.cov}"
+done
+
+```
+
+### Get tss 1000 region
+
+```\{bash Intersect_on_tss1000_region, eval=FALSE\}
+
+cd /faststorage/project/spider2/assay_study_anne/methylation/
+for file in `ls smps/ | grep "d5D32.cov$"`
+do
+	qx --no-scratch -m 50G "bedtools intersect -wo -a smps/$file -b smps/tss1000_region//tss1000_region.txt > smps/tss1000_region//${file/.cov/_tss1000.cov}"
+done
+for file in `ls smps/ | grep "d10D32.cov$"`
+do
+	qx --no-scratch -m 50G "bedtools intersect -wo -a smps/$file -b smps/tss1000_region//tss1000_region.txt > smps/tss1000_region//${file/.cov/_tss1000.cov}"
+done
+
+### Get tss 2000 region
+
+```\{bash Intersect_on_tss2000_region, eval=FALSE\}
+
+cd /faststorage/project/spider2/assay_study_anne/methylation/
+for file in `ls smps/ | grep "d5D32.cov$"`
+do
+	qx --no-scratch -m 50G "bedtools intersect -wo -a smps/$file -b smps//tss2000_region/tss2000_region.txt> smps/tss2000_region/${file/.cov/_tss2000.cov}"
+done
+for file in `ls smps/ | grep "d10D32.cov$"`
+do
+	qx --no-scratch -m 50G "bedtools intersect -wo -a smps/$file -b smps//tss2000_region/tss2000_region.txt > smps/tss2000_region/${file/.cov/_tss2000.cov}"
+done
+
+
+
+## Extract cpgs
+
+
+```\{bash Extract_cpgs, eval=FALSE\}
+
+#srun --mem=16g --pty /bin/bash
+conda activate assay
+
+cd /faststorage/project/spider2/assay_study_anne/methylation/
+
+for directory in `ls -d smps/*region`
+do 
+	for file in `ls $directory | grep ".d5D32_" | grep ".cov$"`
+	do
+		grep "CpG" $directory/${file} > $directory//${file/.cov/.cpg}
+	done
+
+	for file in `ls $directory | grep ".d10D32_" | grep ".cov$"`
+	do
+		grep "CpG" $directory/${file} > $directory//${file/.cov/.cpg}
+	done
+done
+
+```
+
+
+
+
+
+## Calculate weighted methylation level for all the picked out regions
+
+```\{bash Calculate_readsums, eval=FALSE\}
+
+# also check number of C's in each region retained after filtering
+			
+# To use for calculating methylation level difference per gene among populations.
+# Using Jesper's measurement (methylation coverage ratio).
+# Gene, coverage of methy, coverage of unmethy.
+
+cd /faststorage/project/spider2/assay_study_anne/methylation/
+
+chmod a+x calculates_sums.sh
+
+for directory in `ls -d smps/*region`
+do 
+	for file in `ls $directory | grep ".d5D32_" | grep ".cpg$"`
+	do
+		echo $directory/$file
+		sbatch calculates_sums.sh $directory $file
+	done
+
+	for file in `ls $directory | grep ".d10D32_" | grep ".cpg$"`
+	do
+		echo $directory/$file
+		sbatch calculates_sums.sh $directory $file	
+	done
+done
+	# Outfile loooks like this: Gene	methylated_reads		unmethylated_reads		count_of_Cs_in_region
+	# m = methylated , u = unmethylated
+```
+
+
+
+```\{bash Calculate_wmlvl, eval=FALSE\}
+
+# Employ the scripts that calculate methylation level
+
+cd /faststorage/project/spider2/assay_study_anne/methylation/
+
+for directory in `ls -d smps/*region`
+do 
+	for file in `ls $directory | grep ".d5D32_" | grep ".sum$"|head -n1`
+	do
+		echo $directory $file
+		sbatch cal_weighted_mlvl.sh $directory $file
+	done
+
+	for file in `ls $directory | grep ".d10D32_" | grep ".sum$"|head -n1`
+	do
+		echo $directory $file
+		sbatch cal_weighted_mlvl.sh $directory $file
+	done
+done
+```
+

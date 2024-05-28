@@ -1,0 +1,104 @@
+list.files                package:base                 R Documentation
+
+_L_i_s_t _t_h_e _F_i_l_e_s _i_n _a _D_i_r_e_c_t_o_r_y/_F_o_l_d_e_r
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     These functions produce a character vector of the names of files
+     or directories in the named directory.
+
+_U_s_a_g_e:
+
+     list.files(path = ".", pattern = NULL, all.files = FALSE,
+                full.names = FALSE, recursive = FALSE,
+                ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+     
+            dir(path = ".", pattern = NULL, all.files = FALSE,
+                full.names = FALSE, recursive = FALSE,
+                ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+     
+     list.dirs(path = ".", full.names = TRUE, recursive = TRUE)
+     
+_A_r_g_u_m_e_n_t_s:
+
+    path: a character vector of full path names; the default
+          corresponds to the working directory, ‘getwd()’.  Tilde
+          expansion (see ‘path.expand’) is performed.  Missing values
+          will be ignored.  Elements with a marked encoding will be
+          converted to the native encoding (and if that fails,
+          considered non-existent).
+
+ pattern: an optional regular expression.  Only file names which match
+          the regular expression will be returned.
+
+all.files: a logical value.  If ‘FALSE’, only the names of visible
+          files are returned (following Unix-style visibility, that is
+          files whose name does not start with a dot).  If ‘TRUE’, all
+          file names will be returned.
+
+full.names: a logical value.  If ‘TRUE’, the directory path is
+          prepended to the file names to give a relative file path.  If
+          ‘FALSE’, the file names (rather than paths) are returned.
+
+recursive: logical.  Should the listing recurse into directories?
+
+ignore.case: logical.  Should pattern-matching be case-insensitive?
+
+include.dirs: logical.  Should subdirectory names be included in
+          recursive listings?  (They always are in non-recursive ones).
+
+    no..: logical.  Should both ‘"."’ and ‘".."’ be excluded also from
+          non-recursive listings?
+
+_V_a_l_u_e:
+
+     A character vector containing the names of the files in the
+     specified directories (empty if there were no files).  If a path
+     does not exist or is not a directory or is unreadable it is
+     skipped.
+
+     The files are sorted in alphabetical order, on the full path if
+     ‘full.names = TRUE’.
+
+     ‘list.dirs’ implicitly has ‘all.files = TRUE’, and if ‘recursive =
+     TRUE’, the answer includes ‘path’ itself (provided it is a
+     readable directory).
+
+     ‘dir’ is an alias for ‘list.files’.
+
+_N_o_t_e:
+
+     File naming conventions are platform dependent.  The pattern
+     matching works with the case of file names as returned by the OS.
+
+     On a POSIX filesystem recursive listings will follow symbolic
+     links to directories.
+
+_A_u_t_h_o_r(_s):
+
+     Ross Ihaka, Brian Ripley
+
+_S_e_e _A_l_s_o:
+
+     ‘file.info’, ‘file.access’ and ‘files’ for many more file handling
+     functions and ‘file.choose’ for interactive selection.
+
+     ‘glob2rx’ to convert wildcards (as used by system file commands
+     and shells) to regular expressions.
+
+     ‘Sys.glob’ for wildcard expansion on file paths.  ‘basename’ and
+     ‘dirname’, useful for splitting paths into non-directory (aka
+     ‘filename’) and directory parts.
+
+_E_x_a_m_p_l_e_s:
+
+     list.files(R.home())
+     ## Only files starting with a-l or r
+     ## Note that a-l is locale-dependent, but using case-insensitive
+     ## matching makes it unambiguous in English locales
+     dir("../..", pattern = "^[a-lr]", full.names = TRUE, ignore.case = TRUE)
+     
+     list.dirs(R.home("doc"))
+     list.dirs(R.home("doc"), full.names = FALSE)
+     
+

@@ -1,0 +1,50 @@
+*       # ignore everything
+!*.sh   # except also files that end with .sh
+!*.r    # and also except files with .r
+!*.md   # and also except files with .md
+!*/     # except: do not ignore directories
+expression/assembling/
+assay_new_setup/data/
+expression/mapping/
+expression/results/
+*.out
+*.tar.gz
+*.cov.gz
+*.
+*.txt
+expression/
+*.csv
+*.cpgf
+*.chh
+*.chhf
+*.chgf
+*.chg
+*.cpp
+*.cpgf
+*.cpg
+*.html
+*.tiff
+*.sum
+*.cpgf
+*.count
+*.count.gz
+*.gz
+*.covf
+*.cov
+*.cov.sum
+*.pdf
+*.png
+.vscode/settings.json
+*.qs
+*.tab
+*.fsa
+*.fa
+*.xlsx
+*.Rd
+*.rda
+*.zip
+*.doc
+*.docx
+
+assay_new_setup/derived_data_and_code/methylation/MACAU2-master/
+
